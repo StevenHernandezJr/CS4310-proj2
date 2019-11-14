@@ -70,6 +70,12 @@ int main(int argc, char* argv[]) {
         read(new_sd, buffer, MAXBUF);
         cout << "Buffer: " << buffer << endl;
 
+        string response;
+        if(buffer == "#JOIN") {
+            response = "$OK";
+            write(new_sd, response.c_str(), response.length());
+        }
+
         close(new_sd);
     }
 
