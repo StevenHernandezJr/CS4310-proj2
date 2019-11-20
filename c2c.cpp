@@ -3,6 +3,7 @@
 #include <ctime>
 #include <cstring>
 #include <unistd.h>
+#include <cstdlib>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
