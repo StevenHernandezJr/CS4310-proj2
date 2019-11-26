@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <unistd.h>
 #include <ctime>
 #include <cstring>
@@ -11,9 +12,12 @@
 #include <sys/socket.h>
 
 #define MAXBUF 1024
+#define MAXAGENTS 15
 
 using namespace std;
 
+// This function prints a string passed as a parameter to
+// the log file called "log.txt"
 void printToLog(string s) {
     ofstream logFile("log.txt", ios::app);
 
@@ -26,6 +30,8 @@ void printToLog(string s) {
     logFile.close();
 }
 
+// This function checks if the given IP address is in the
+// the list of active IP addresses (agents)
 bool isInList(string ip, string list[],int size) {
     bool found = false;
     for(int i = 0; i < size; i++) {
@@ -35,6 +41,8 @@ bool isInList(string ip, string list[],int size) {
     return found;
 }
 
+// Remove the given agent (IP address) from both the IP array
+// and the timestamp array and shift remaining agents
 void removeFromList(string ip, string list1[], time_t list2[], int &size) {
     int index = 0;
     bool found = false;
@@ -51,6 +59,13 @@ void removeFromList(string ip, string list1[], time_t list2[], int &size) {
     size--;
 }
 
+// This function converts a double to a string
+string dbl_to_str(double d) {
+    stringstream x;
+    x << d;
+    return x.str();
+}
+
 int main(int argc, char* argv[]) {
     // Check for correct # of arguments
     if(argc < 2) {
@@ -61,8 +76,8 @@ int main(int argc, char* argv[]) {
     // Define buffer and other variables to be used
     char buffer[MAXBUF];
     int numAgents = 0;
-    string agents[15];
-    time_t timeStamps[15];
+    string agents[MAXAGENTS];
+    time_t timeStamps[MAXAGENTS];
 
     int port = atoi(argv[1]);
     struct sockaddr_in my_addr;
@@ -144,11 +159,11 @@ int main(int argc, char* argv[]) {
             printToLog("Received a \"#LIST\" action from agent \"" + ip_addr + "\"");
 
             if(isInList(ip_addr, agents, numAgents)) {
-                cout << "Active Agents" << endl;
                 for(int i = 0; i < numAgents; i++) {
-                    cout << agents[i] << "\t";
-                    cout << difftime(time(NULL), timeStamps[i]) << " seconds ago" << endl;
+                    response = "<" + agents[i] + ", " + dbl_to_str(difftime(time(NULL), timeStamps[i])) + ">";
+                    write(new_sd, response.c_str(), response.length());
                 }
+                printToLog("Responded to agent \"" + ip_addr + "\" with list of active agents");
             }
             else {
                 printToLog("No response is supplied to agent \"" + ip_addr + "\" (agent not active)");
@@ -156,6 +171,24 @@ int main(int argc, char* argv[]) {
         }
         else if(strcmp(buffer, "#LOG") == 0) {
             printToLog("Received a \"#LOG\" action from agent \"" + ip_addr + "\"");
+
+            if(isInList(ip_addr, agents, numAgents)) {
+                ifstream inFile("log.txt");
+                if(!inFile) {
+                    cerr << "ERROR: Unable to open \"log.txt\"" << endl;
+                    return -1;
+                }
+                while(!(inFile.eof())) {
+                    memset(buffer, 0, MAXBUF);
+                    inFile.read(buffer, sizeof(buffer));
+                    write(new_sd, buffer, sizeof(buffer));
+                }
+                inFile.close();
+                printToLog("Responded to agent \"" + ip_addr + "\" with \"log.txt\"");
+            }
+            else {
+                printToLog("No response is supplied to agent \"" + ip_addr + "\" (agent not active)");
+            }
         }
 
         close(new_sd);
