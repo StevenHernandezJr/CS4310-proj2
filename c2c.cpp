@@ -1,3 +1,9 @@
+/**********************************
+ * Steven Hernandez
+ * CS 4310
+ * Project 2
+ *********************************/
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
