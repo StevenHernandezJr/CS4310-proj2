@@ -3,6 +3,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <ctime>
+#include <sys/time.h>
 #include <cstring>
 #include <cstdlib>
 #include <netinet/in.h>
@@ -21,9 +22,15 @@ using namespace std;
 void printToLog(string s) {
     ofstream logFile("log.txt", ios::app);
 
-    time_t tm = time(NULL);
-    char* timeStamp = ctime(&tm);
-    timeStamp[strlen(timeStamp)-1] = '\0';
+    timeval curTime;
+    gettimeofday(&curTime, NULL);
+    int milli = curTime.tv_usec / 1000;
+
+    char buffer[80];
+    strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
+
+    char timeStamp[84] = "";
+    sprintf(timeStamp, "%s:%d", buffer, milli);
 
     logFile << "\"" << timeStamp << "\": " << s << "\n";
 
